@@ -1,0 +1,1404 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>d2e537463f31b6e0055cd8b4204c19b1a89348eb</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100vh;
+      background: #000;
+    }
+    @supports (height: 100dvh) {
+      html, body {
+        height: 100dvh;
+      }
+    }
+    body {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    #language-picker {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    #language-picker[hidden] { display: none; }
+    #language-picker button {
+      box-sizing: border-box;
+      width: min(176px, calc(100vw - 48px));
+      aspect-ratio: 4 / 1;
+      padding: 0;
+      border: 1px solid var(--key-border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--key-color);
+      font: 13px/1 system-ui, sans-serif;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #language-picker button:hover,
+    #language-picker button:active { border-color: var(--key-color); color: #b0b0b0; }
+    #language-picker button:focus-visible { outline: 1px solid var(--key-color); outline-offset: 3px; }
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: min(420px, calc(100vw - 48px));
+      transform: translate(-50%, -50%);
+      color: #c8c8c8;
+      font: 13px/1.4 system-ui, sans-serif;
+      text-align: center;
+    }
+    #progress {
+      height: 4px;
+      border: 1px solid #707070;
+    }
+    #progress-value {
+      width: 0;
+      height: 100%;
+      background: #d8d8d8;
+    }
+    #status {
+      margin-top: 10px;
+    }
+    #stage {
+      position: relative;
+      width: min(100vw, 133.333333vh);
+      aspect-ratio: 4 / 3;
+    }
+    @supports (height: 100dvh) {
+      #stage {
+        width: min(100vw, 133.333333dvh);
+      }
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+      image-rendering: pixelated;
+    }
+    #start {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: #c8c8c8;
+      font: 13px/1.4 system-ui, sans-serif;
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+    }
+    #start[hidden] {
+      display: none;
+    }
+    #diagnostics {
+      position: fixed;
+      z-index: 19;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-height: 46vh;
+      margin: 0;
+      padding: 8px 10px;
+      overflow: auto;
+      pointer-events: none;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: #d7ffd7;
+      background: rgba(0, 0, 0, 0.86);
+      font: 11px/1.35 ui-monospace, Consolas, monospace;
+    }
+    [hidden] {
+      display: none;
+    }
+    #controls { display: none; }
+    #storage-status {
+      position: fixed;
+      bottom: max(4px, env(safe-area-inset-bottom));
+      left: 12px;
+      right: 12px;
+      z-index: 18;
+      color: #c8c8c8;
+      font: 11px/1.4 system-ui, sans-serif;
+      text-align: center;
+      pointer-events: none;
+    }
+    :root { --viewport-height: 100vh; --key-border: #454545; --key-color: #909090; }
+    @supports (height: 100dvh) {
+      :root { --viewport-height: 100dvh; }
+    }
+    @media (pointer: coarse) and (hover: none) {
+      html, body { touch-action: none; overscroll-behavior: none; }
+      body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+      #controls:not([hidden]) { display: contents; }
+      .key-grid {
+        --key-size: clamp(44px, min(9vw, 17vh), 64px);
+        --control-top: max(12px, env(safe-area-inset-top));
+        --control-bottom: max(12px, env(safe-area-inset-bottom));
+        --grid-height: calc(3 * var(--key-size) + 12px);
+        position: fixed;
+        z-index: 10;
+        display: grid;
+        grid-template-columns: repeat(3, var(--key-size));
+        grid-template-rows: repeat(3, var(--key-size));
+        gap: 6px;
+        bottom: max(var(--control-bottom), calc((var(--viewport-height) - var(--control-top) + var(--control-bottom) - var(--grid-height)) / 2));
+        pointer-events: none;
+      }
+      #left-keys { left: max(12px, env(safe-area-inset-left)); }
+      #right-keys { right: max(12px, env(safe-area-inset-right)); pointer-events: auto; touch-action: none; }
+      .key-grid::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        height: calc(var(--key-size) + 6px);
+        pointer-events: auto;
+        touch-action: none;
+      }
+      .key-grid button {
+        padding: 0;
+        border: 1px solid var(--key-border);
+        border-radius: 6px;
+        background: transparent;
+        color: var(--key-color);
+        font: 11px/1 system-ui, sans-serif;
+        display: grid;
+        place-items: center;
+        touch-action: none;
+        pointer-events: auto;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .key-grid button.arrow { font-size: 18px; }
+      #left-keys button.arrow {
+        position: absolute;
+        bottom: 0;
+        box-sizing: border-box;
+        width: calc(1.5 * var(--key-size) + 3px);
+        height: calc(1.5 * var(--key-size) + 3px);
+        font-size: 27px;
+      }
+      #left-keys [data-key="90"] { left: 0; }
+      #left-keys [data-key="88"] { right: 0; }
+      .key-grid button.pressed { border-color: var(--key-color); color: #b0b0b0; }
+      .key-grid button:focus-visible { outline: 1px solid var(--key-color); }
+    }
+    @media (pointer: coarse) and (hover: none) and (orientation: portrait) {
+      body { align-items: start; }
+      #stage { margin-top: env(safe-area-inset-top); width: min(100vw, 133.333333dvh); }
+      .key-grid {
+        --key-size: clamp(44px, calc((100vw - 54px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 6), 64px);
+        /* The top-aligned 4:3 game occupies 75vw below the safe-area inset. */
+        --control-top: calc(env(safe-area-inset-top) + 75vw + 12px);
+      }
+      #left-keys { left: calc(50% - 3 * var(--key-size) - 15px); }
+      #right-keys { right: calc(50% - 3 * var(--key-size) - 15px); }
+    }
+  </style>
+</head>
+<body>
+  <nav id="language-picker" aria-label="Game language">
+    <button type="button" data-language="ja">Japanese</button>
+    <button type="button" data-language="ko">Korean</button>
+  </nav>
+  <div id="loading" hidden>
+    <div id="progress" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="progress-value"></div>
+    </div>
+    <div id="status">Loading …</div>
+  </div>
+  <main id="stage" hidden>
+    <canvas id="canvas" width="640" height="480" tabindex="-1"></canvas>
+    <div id="start" hidden></div>
+  </main>
+  <nav id="controls" aria-label="Player 1 touch keyboard" hidden>
+    <div class="key-grid" id="left-keys">
+      <button type="button" data-key="27" aria-label="Escape" style="grid-area:1/1">ESC</button>
+      <button type="button" data-key="13" aria-label="Enter" style="grid-area:1/2">ENTER</button>
+      <button type="button" class="arrow" data-key="90" aria-label="Rotate counterclockwise (Z)">↺</button>
+      <button type="button" class="arrow" data-key="88" aria-label="Rotate clockwise (X)">↻</button>
+    </div>
+    <div class="key-grid" id="right-keys">
+      <button type="button" class="arrow" data-key="84" aria-label="Up (T)" style="grid-area:1/2">↑</button>
+      <button type="button" class="arrow" data-key="70" aria-label="Left (F)" style="grid-area:2/1">←</button>
+      <button type="button" class="arrow" data-key="72" aria-label="Right (H)" style="grid-area:2/3">→</button>
+      <button type="button" class="arrow" data-key="86" aria-label="Down (V)" style="grid-area:3/2">↓</button>
+    </div>
+  </nav>
+  <pre id="diagnostics" hidden aria-live="polite"></pre>
+  <div id="storage-status" hidden role="status"></div>
+  <script>
+    const stage = document.getElementById('stage');
+    const canvas = document.getElementById('canvas');
+    const diagnostics = document.getElementById('diagnostics');
+    const diagnosticsEnabled = new URLSearchParams(window.location.search).has('diagnostics');
+    if (diagnosticsEnabled) {
+      const retainedLines = [];
+      const maximumRetainedLines = 200;
+      const maximumLineLength = 2048;
+      const appendDiagnostic = (level, args) => {
+        const seconds = (performance.now() / 1000).toFixed(3);
+        let line = Array.from(args, (value) => {
+          try {
+            return typeof value === 'string' ? value : JSON.stringify(value);
+          } catch (_error) {
+            return String(value);
+          }
+        }).join(' ');
+        if (line.length > maximumLineLength) {
+          line = line.slice(0, maximumLineLength) + '…';
+        }
+        retainedLines.push('[' + seconds + 's][' + level + '] ' + line);
+        if (retainedLines.length > maximumRetainedLines) {
+          retainedLines.splice(0, retainedLines.length - maximumRetainedLines);
+        }
+        diagnostics.textContent = retainedLines.join('\n');
+        diagnostics.scrollTop = diagnostics.scrollHeight;
+      };
+      const originalLog = console.log.bind(console);
+      const originalError = console.error.bind(console);
+      console.log = (...args) => {
+        originalLog(...args);
+        appendDiagnostic('log', args);
+      };
+      console.error = (...args) => {
+        originalError(...args);
+        appendDiagnostic('error', args);
+      };
+      diagnostics.hidden = false;
+      appendDiagnostic('log', ['web_diagnostics_enabled retained_lines=' + maximumRetainedLines]);
+    }
+    const start = document.getElementById('start');
+    const loading = document.getElementById('loading');
+    const progress = document.getElementById('progress');
+    const progressValue = document.getElementById('progress-value');
+    const status = document.getElementById('status');
+    const picker = document.getElementById('language-picker');
+    const editions = {"ja":{"wasm":2836062,"data":11564516},"ko":{"wasm":2834776,"data":11386045}};
+    const downloads = new Map();
+    const expectedDownloadBytes = new Map();
+    let selectedLanguage = null;
+    let activationTimer = null;
+    const checkActivation = () => {
+      activationTimer = null;
+      if (Module._web_status() === 4) {
+        loading.hidden = true;
+        stage.hidden = false;
+        stage.style.visibility = 'visible';
+        start.hidden = false;
+        return; // Preserve the game's fault message.
+      }
+      const audio = Module.webAudio.snapshot();
+      if (audio.failed) {
+        failLoading('Audio could not start. Reload to retry.');
+        return;
+      }
+      if (audio.contextState === 'running'
+          && (audio.delivery === 'scheduled' || audio.workletReady)) {
+        start.hidden = true;
+        loading.hidden = true;
+        stage.hidden = false;
+        stage.style.visibility = 'visible';
+        document.getElementById('controls').hidden = false;
+        canvas.focus({ preventScroll: true });
+        return;
+      }
+      // Observe readiness without issuing repeated gesture-only resume requests.
+      activationTimer = setTimeout(checkActivation, 50);
+    };
+    const activateGame = (event) => {
+      if (event.type === 'keydown' && (event.repeat || event.key === 'Escape')) return;
+      if (typeof Module._web_activate !== 'function') return;
+      if (Module._web_status() === 4) return;
+      const accepted = Module._web_activate();
+      if (accepted || Module.webAudio.snapshot().failed) {
+        if (activationTimer !== null) clearTimeout(activationTimer);
+        if (!Module.webReportTimer) Module.webReportTimer = setInterval(() => Module._web_report(), 5000);
+        checkActivation();
+      } else {
+        failLoading('Audio could not start. Reload to retry.');
+      }
+    };
+    // Later gestures can recover an interrupted audio context. Initial startup
+    // uses the language button's completed click, before downloading the game.
+    canvas.addEventListener('click', activateGame);
+    canvas.addEventListener('keydown', activateGame);
+    const nativeFetch = globalThis.fetch.bind(globalThis);
+    let nextDownloadId = 0;
+    let renderPending = false;
+
+    function renderProgress() {
+      renderPending = false;
+      let loadedBytes = 0;
+      let totalBytes = 0;
+      let hasUnknownTotal = false;
+      for (const download of downloads.values()) {
+        loadedBytes += download.loaded;
+        totalBytes += download.total;
+        hasUnknownTotal ||= download.total === 0 && !download.done;
+      }
+      if (totalBytes === 0 || hasUnknownTotal) {
+        status.textContent = 'Loading …';
+        return;
+      }
+      const completedBytes = Math.min(loadedBytes, totalBytes);
+      const percent = Math.min(100, (completedBytes / totalBytes) * 100);
+      const integerPercent = Math.floor(percent);
+      progressValue.style.width = `${integerPercent}%`;
+      progress.setAttribute('aria-valuenow', String(integerPercent));
+      status.textContent = `Loading … ${integerPercent}%`;
+    }
+
+    function scheduleProgressRender() {
+      if (renderPending) {
+        return;
+      }
+      renderPending = true;
+      requestAnimationFrame(renderProgress);
+    }
+
+    function responseLength(response) {
+      const pathname = new URL(response.url).pathname;
+      for (const [suffix, expectedBytes] of expectedDownloadBytes) {
+        if (pathname.endsWith(suffix) && Number.isFinite(expectedBytes) && expectedBytes > 0) {
+          return expectedBytes;
+        }
+      }
+      const contentEncoding = response.headers.get('Content-Encoding');
+      if (contentEncoding !== null && contentEncoding !== 'identity') {
+        return 0;
+      }
+      const length = Number(response.headers.get('Content-Length'));
+      return Number.isFinite(length) && length > 0 ? length : 0;
+    }
+
+    globalThis.fetch = async (input, init) => {
+      const response = await nativeFetch(input, init);
+      const method = init?.method ?? (input instanceof Request ? input.method : 'GET');
+      if (method.toUpperCase() !== 'GET' || !response.ok || response.body === null) {
+        return response;
+      }
+
+      const id = nextDownloadId++;
+      const download = {
+        url: response.url,
+        loaded: 0,
+        total: responseLength(response),
+        done: false
+      };
+      downloads.set(id, download);
+      scheduleProgressRender();
+      const reader = response.body.getReader();
+      const body = new ReadableStream({
+        async pull(controller) {
+          try {
+            const chunk = await reader.read();
+            if (chunk.done) {
+              download.done = true;
+              if (download.total === 0) {
+                download.total = download.loaded;
+              } else {
+                download.loaded = Math.max(download.loaded, download.total);
+              }
+              scheduleProgressRender();
+              controller.close();
+              return;
+            }
+            download.loaded += chunk.value.byteLength;
+            scheduleProgressRender();
+            controller.enqueue(chunk.value);
+          } catch (error) {
+            controller.error(error);
+          }
+        },
+        cancel(reason) {
+          return reader.cancel(reason);
+        }
+      });
+      return new Response(body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers
+      });
+    };
+
+    function acceptEmscriptenStatus(message) {
+      const dataProgress = /Downloading data\.\.\. \(\d+\/(\d+)\)/.exec(message);
+      if (dataProgress !== null) {
+        const total = Number(dataProgress[1]);
+        for (const download of downloads.values()) {
+          if (download.total === 0 && download.url.endsWith('.data')) {
+            download.total = total;
+          }
+        }
+      }
+      scheduleProgressRender();
+    }
+
+    function finishLoading() {
+      renderProgress();
+      globalThis.fetch = nativeFetch;
+      status.textContent = 'Starting…';
+      // SDL measures the canvas during initialization. Give it layout space
+      // before main runs; visibility hides the uninitialized frame only.
+      stage.hidden = false;
+      stage.style.visibility = 'hidden';
+      // Emscripten calls onRuntimeInitialized before SDL_AppInit. Wait for the
+      // native application, then use the audio context unlocked by selection.
+      const startWhenReady = () => {
+        activationTimer = null;
+        if (Module._web_status() === 0) {
+          activationTimer = setTimeout(startWhenReady, 50);
+        } else if (Module._web_status() === 4) {
+          checkActivation();
+        } else if (Module._web_status() === 3) {
+          failLoading('Game initialization failed. Reload to retry.');
+        } else {
+          activateGame({type: 'load'});
+        }
+      };
+      startWhenReady();
+    }
+
+    function failLoading(message = 'Loading failed. Reload to retry.') {
+      globalThis.fetch = nativeFetch;
+      if (activationTimer !== null) clearTimeout(activationTimer);
+      activationTimer = null;
+      loading.hidden = false;
+      status.textContent = message;
+      Module.webAudio?.shutdown();
+    }
+
+    var Module = {
+      canvas,
+      setStatus: acceptEmscriptenStatus,
+      onRuntimeInitialized: finishLoading,
+      print: (...args) => { console.log(...args); nativeFetch('/_diagnostic', {method:'POST', body:args.join(' ')}).catch(() => {}); },
+      printErr: (...args) => { console.error(...args); nativeFetch('/_diagnostic', {method:'POST', body:args.join(' ')}).catch(() => {}); },
+      onAbort: (reason) => {
+        failLoading();
+        console.error(`Phase-C best-effort Web abort: ${reason}`);
+      },
+      onExit: (exitStatus) => console.error(`Phase-C best-effort Web exit: ${exitStatus}`)
+    };
+    for (const button of picker.querySelectorAll('button[data-language]')) {
+      button.addEventListener('click', () => {
+        const language = button.dataset.language;
+        if (selectedLanguage !== null || !Object.hasOwn(editions, language)) return;
+        selectedLanguage = language;
+        picker.hidden = true;
+        loading.hidden = false;
+        document.documentElement.lang = language;
+        Module.p2wLanguage = language;
+        expectedDownloadBytes.set('.data', editions[language].data);
+        expectedDownloadBytes.set('.wasm', editions[language].wasm);
+        // Keep this synchronous with the trusted click, including on mobile.
+        if (!Module.webAudio.initialize() || !Module.webAudio.resume()) {
+          failLoading('Audio could not start. Reload to retry.');
+          return;
+        }
+        Module.locateFile = file => new URL(language + '/' + file, window.location.href).href;
+        const script = document.createElement('script');
+        script.src = language + '/index.js';
+        script.onerror = () => failLoading();
+        document.body.appendChild(script);
+      });
+    }
+  </script>
+  <script>
+    (() => {
+      const controls = document.getElementById('controls');
+      const mobile = matchMedia('(pointer: coarse) and (hover: none)');
+      const orientation = matchMedia('(orientation: portrait)');
+      const pointers = new Map();
+      const activationPointers = new Set();
+      const buttons = [...controls.querySelectorAll('button[data-key]')];
+      const dpad = document.getElementById('right-keys');
+      const actions = document.getElementById('left-keys');
+      const direction = key => buttons.find(button => Number(button.dataset.key) === key);
+      const counts = new Map();
+      const ready = () => start.hidden && Module._web_status?.() === 2;
+      const send = (button, down) => {
+        if (!button) return;
+        const old = counts.get(button) || 0;
+        const count = Math.max(0, old + (down ? 1 : -1));
+        counts.set(button, count);
+        button.classList.toggle('pressed', count > 0);
+        if ((old === 0) !== (count === 0)) {
+          if (Module._web_status() >= 3) return; // Keep an existing exit/fault message.
+          if (!Module._web_virtual_key(Number(button.dataset.key), Number(count > 0))) {
+            start.hidden = false;
+            start.textContent = 'Execution stopped: touch input failed. Reload to retry.';
+          }
+        }
+      };
+      const hit = event => {
+        const rect = dpad.getBoundingClientRect();
+        const x = event.clientX - rect.left, y = event.clientY - rect.top;
+        if (x >= 0 && y >= 0 && x < rect.width && y < rect.height + (rect.height + 6) / 3) {
+          const column = Math.floor(x * 3 / rect.width), row = Math.floor(y * 3 / rect.height);
+          if (column === 1 && row === 1) return [];
+          // Equal-spaced arrow centers divide corners along 45-degree lines.
+          // Keep measuring below the grid, where Down is the closest arrow.
+          const dx = x - rect.width / 2, dy = y - rect.height / 2;
+          const key = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 70 : 72) : (dy < 0 ? 84 : 86);
+          return [direction(key)]; // Exact diagonal ties prefer the vertical arrow.
+        }
+        const actionRect = actions.getBoundingClientRect();
+        const actionX = event.clientX - actionRect.left;
+        const below = event.clientY - actionRect.top - actionRect.height;
+        if (actionX >= 0 && actionX < actionRect.width && below >= 0 && below < (actionRect.height + 6) / 3) {
+          return [direction(actionX < actionRect.width / 2 ? 90 : 88)];
+        }
+        const button = document.elementFromPoint(event.clientX, event.clientY)?.closest('button[data-key]');
+        return buttons.includes(button) && !dpad.contains(button) ? [button] : [];
+      };
+      const update = (pointerId, next) => {
+        const previous = pointers.get(pointerId) || [];
+        for (const button of previous) if (!next.includes(button)) send(button, false);
+        for (const button of next) if (!previous.includes(button)) send(button, true);
+        pointers.set(pointerId, next);
+      };
+      const release = event => {
+        if (!pointers.has(event.pointerId)) return;
+        update(event.pointerId, []);
+        pointers.delete(event.pointerId);
+        activationPointers.delete(event.pointerId);
+      };
+      const clear = () => {
+        for (const pointerId of [...pointers.keys()]) release({pointerId});
+      };
+      for (const button of [actions, dpad]) {
+        button.addEventListener('pointerdown', event => {
+          if (!mobile.matches || event.button !== 0) return;
+          event.preventDefault();
+          button.setPointerCapture(event.pointerId);
+          if (!ready()) activationPointers.add(event.pointerId);
+          update(event.pointerId, ready() ? hit(event) : []);
+        });
+        button.addEventListener('pointermove', event => {
+          if (!pointers.has(event.pointerId) || activationPointers.has(event.pointerId) || !ready()) return;
+          update(event.pointerId, hit(event));
+        });
+        button.addEventListener('pointerup', event => {
+          const tracked = pointers.has(event.pointerId);
+          release(event);
+          if (tracked && !ready() && hit(event).length) activateGame(event);
+        });
+        button.addEventListener('pointercancel', release);
+        button.addEventListener('lostpointercapture', release);
+        button.addEventListener('click', event => event.preventDefault());
+      }
+      window.addEventListener('blur', clear);
+      window.addEventListener('pagehide', clear);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) clear(); });
+      mobile.addEventListener('change', clear);
+      orientation.addEventListener('change', clear);
+      // Safari gesture events supplement touch-action for page-level pinch zoom.
+      const stopMobileGesture = event => { if (mobile.matches) event.preventDefault(); };
+      for (const type of ['gesturestart', 'gesturechange', 'gestureend', 'dblclick', 'contextmenu']) {
+        document.addEventListener(type, stopMobileGesture, {passive: false});
+      }
+      document.addEventListener('touchmove', event => {
+        if (mobile.matches && event.touches.length > 1) event.preventDefault();
+      }, {passive: false});
+    })();
+  </script>
+  <script>(function (root) {
+  'use strict';
+
+  // Derived from the parent's V4 worklet/recovery backend. Plain HTTP uses
+  // the small scheduled buffers from d7abd770a instead of SDL ScriptProcessor.
+  const BACKEND_IDENTITY = 'P2W_WEB_PCM_V6';
+  const PROCESSOR_NAME = 'p2w-pcm-ring';
+  const SOURCE_RATE = 44100;
+  const CHANNELS = 2;
+  const BLOCK_FRAMES = 512;
+  const MINIMUM_TARGET_FRAMES = 2048;
+  const TARGET_RAISE_FRAMES = 1024;
+  const MAXIMUM_TARGET_FRAMES = 8192;
+  const TARGET_RECOVERY_SECONDS = 30;
+  const MINIMUM_LOW_WATER_FRAMES = 1024;
+  const MAX_DETAIL_LINES = 100;
+
+  // The processor is serialized into a Blob so the Web package does not need
+  // another runtime asset. A persistent audio-thread consumer
+  // removes the per-block AudioBufferSourceNode scheduling boundary while the
+  // canonical producer retains its 512-frame cadence.
+  // Evidence: M7A-PD-39D16D4E4CF7BFDC911AB8A79E5CB140.
+  function audioWorkletModule() {
+    'use strict';
+
+    const sourceRate = 44100;
+    const channels = 2;
+    const statusIntervalFrames = 512;
+
+    class P2wPcmRingProcessor extends AudioWorkletProcessor {
+      constructor() {
+        super();
+        this.blocks = [];
+        this.blockOffset = 0;
+        this.queuedFrames = 0;
+        this.sourcePhase = 0;
+        this.running = false;
+        this.consumedFrames = 0;
+        this.consumedSinceStatus = 0;
+        this.underruns = 0;
+        this.inUnderrun = false;
+        this.currentUnderrunOutputFrames = 0;
+        this.largestUnderrunOutputFrames = 0;
+        this.port.onmessage = (event) => this.handleMessage(event.data);
+      }
+
+      handleMessage(message) {
+        if (message === null || typeof message !== 'object') {
+          return;
+        }
+        if (message.type === 'enqueue') {
+          const samples = message.samples;
+          if (!(samples instanceof Int16Array) || samples.length === 0
+              || samples.length % channels !== 0) {
+            return;
+          }
+          this.blocks.push(samples);
+          this.queuedFrames += samples.length / channels;
+          if (this.inUnderrun) {
+            this.largestUnderrunOutputFrames = Math.max(
+              this.largestUnderrunOutputFrames,
+              this.currentUnderrunOutputFrames);
+            this.currentUnderrunOutputFrames = 0;
+            this.inUnderrun = false;
+          }
+          return;
+        }
+        if (message.type === 'start') {
+          this.running = true;
+          this.publishStatus();
+          return;
+        }
+        if (message.type === 'reset') {
+          this.blocks = [];
+          this.blockOffset = 0;
+          this.queuedFrames = 0;
+          this.sourcePhase = 0;
+          this.running = false;
+          this.inUnderrun = false;
+          this.currentUnderrunOutputFrames = 0;
+          this.publishStatus();
+        }
+      }
+
+      readSample(relativeFrame, channel) {
+        let blockIndex = 0;
+        let frame = this.blockOffset + relativeFrame;
+        while (blockIndex < this.blocks.length) {
+          const block = this.blocks[blockIndex];
+          const blockFrames = block.length / channels;
+          if (frame < blockFrames) {
+            return block[frame * channels + channel];
+          }
+          frame -= blockFrames;
+          ++blockIndex;
+        }
+        return 0;
+      }
+
+      consumeFrames(requested) {
+        let remaining = Math.min(requested, this.queuedFrames);
+        const consumed = remaining;
+        while (remaining !== 0 && this.blocks.length !== 0) {
+          const block = this.blocks[0];
+          const blockFrames = block.length / channels;
+          const available = blockFrames - this.blockOffset;
+          const take = Math.min(remaining, available);
+          this.blockOffset += take;
+          remaining -= take;
+          if (this.blockOffset === blockFrames) {
+            this.blocks.shift();
+            this.blockOffset = 0;
+          }
+        }
+        this.queuedFrames -= consumed;
+        this.consumedFrames += consumed;
+        this.consumedSinceStatus += consumed;
+        return consumed;
+      }
+
+      beginUnderrun() {
+        if (!this.inUnderrun) {
+          this.inUnderrun = true;
+          this.currentUnderrunOutputFrames = 0;
+          ++this.underruns;
+          this.publishStatus();
+        }
+        ++this.currentUnderrunOutputFrames;
+        this.largestUnderrunOutputFrames = Math.max(
+          this.largestUnderrunOutputFrames,
+          this.currentUnderrunOutputFrames);
+      }
+
+      publishStatus() {
+        this.port.postMessage({
+          type: 'status',
+          consumedFrames: this.consumedFrames,
+          queuedFrames: this.queuedFrames,
+          underruns: this.underruns,
+          largestUnderrunOutputFrames:
+            this.largestUnderrunOutputFrames,
+        });
+        this.consumedSinceStatus = 0;
+      }
+
+      process(_inputs, outputs) {
+        const output = outputs[0];
+        if (output === undefined || output.length < channels) {
+          return true;
+        }
+        const left = output[0];
+        const right = output[1];
+        left.fill(0);
+        right.fill(0);
+        if (!this.running) {
+          return true;
+        }
+
+        const sourceFramesPerOutput = sourceRate / sampleRate;
+        for (let outputFrame = 0; outputFrame < left.length; ++outputFrame) {
+          if (this.queuedFrames === 0) {
+            this.sourcePhase = 0;
+            this.beginUnderrun();
+            continue;
+          }
+
+          const nextFrame = this.queuedFrames > 1 ? 1 : 0;
+          const left0 = this.readSample(0, 0);
+          const right0 = this.readSample(0, 1);
+          const left1 = this.readSample(nextFrame, 0);
+          const right1 = this.readSample(nextFrame, 1);
+          left[outputFrame] = (left0
+            + (left1 - left0) * this.sourcePhase) / 32768;
+          right[outputFrame] = (right0
+            + (right1 - right0) * this.sourcePhase) / 32768;
+
+          this.sourcePhase += sourceFramesPerOutput;
+          const requestedConsumption = Math.floor(this.sourcePhase);
+          if (requestedConsumption !== 0) {
+            const consumed = this.consumeFrames(requestedConsumption);
+            this.sourcePhase -= consumed;
+            if (consumed !== requestedConsumption || this.queuedFrames === 0) {
+              this.sourcePhase = 0;
+            }
+          }
+        }
+
+        if (this.consumedSinceStatus >= statusIntervalFrames) {
+          this.publishStatus();
+        }
+        return true;
+      }
+    }
+
+    registerProcessor('p2w-pcm-ring', P2wPcmRingProcessor);
+  }
+
+  const AUDIO_WORKLET_SOURCE = `(${audioWorkletModule.toString()})()`;
+
+  function createScheduledAudioBackend(environment) {
+    const host = environment || root;
+    const logger = host.console || root.console;
+    let context = null;
+    let workletNode = null;
+    let workletReady = false;
+    let scheduledFallback = false;
+    const sources = new Set();
+    let nextStartTime = 0;
+    let segmentStartTime = 0;
+    let resumePromise = null;
+    let recoveryNeeded = false;
+    let closing = false;
+    let failed = false;
+    let failureDetail = '';
+    let started = false;
+    let staging = new Int16Array(BLOCK_FRAMES * CHANNELS);
+    let stagingFrames = 0;
+    let prepared = [];
+    let preparedFrames = 0;
+    let sentFrames = 0;
+    let consumedFrames = 0;
+    let reportedWorkletFrames = 0;
+    let detailLines = 0;
+    let scheduledBuffers = 0;
+    let scheduledFrames = 0;
+    let underruns = 0;
+    let largestGapMilliseconds = 0;
+    let minimumHeadroomFrames = Number.POSITIVE_INFINITY;
+    let targetFrames = MINIMUM_TARGET_FRAMES;
+    let targetRaises = 0;
+    let targetReductions = 0;
+    let targetRecoveryAt = 0;
+    let contextStateChanges = 0;
+    let resumeAttempts = 0;
+    let resumeRecoveries = 0;
+
+    function detail(message, error) {
+      if (detailLines >= MAX_DETAIL_LINES) {
+        return;
+      }
+      ++detailLines;
+      const sink = error ? logger.error : logger.log;
+      sink.call(logger, `${BACKEND_IDENTITY} ${message}`);
+    }
+
+    function fail(operation, reason) {
+      if (failed) {
+        return false;
+      }
+      failed = true;
+      failureDetail = `${operation}: ${reason instanceof Error ? reason.message : String(reason)}`;
+      detail(`failure=${failureDetail}`, true);
+      return false;
+    }
+
+    function observePromise(operation, promise) {
+      if (promise && typeof promise.catch === 'function') {
+        promise.catch((reason) => fail(operation, reason));
+      }
+    }
+
+    // Browsers may suspend or interrupt a previously running AudioContext
+    // without closing it. Treat that state as recoverable and retain one
+    // in-flight automatic resume request. A browser gesture may explicitly
+    // retry a policy-blocked pending request, and a rejection is deliberately
+    // non-sticky.
+    // Evidence: M7A-PD-39D16D4E4CF7BFDC911AB8A79E5CB140 and
+    // WEB-MIDI-CONTEXT-LIFECYCLE-R3-20260822.
+    function requestContextResume(operation, permitGestureRetry) {
+      if (context === null || failed || closing) {
+        return false;
+      }
+      if (context.state === 'running') {
+        return true;
+      }
+      if (context.state === 'closed') {
+        return false;
+      }
+      if (resumePromise !== null && !permitGestureRetry) {
+        return true;
+      }
+
+      const requestedContext = context;
+      const previousState = requestedContext.state;
+      const ownsResumeSlot = resumePromise === null;
+      recoveryNeeded = true;
+      ++resumeAttempts;
+      try {
+        const requested = requestedContext.resume();
+        if (requested && typeof requested.then === 'function') {
+          const observed = Promise.resolve(requested).then(
+            () => {
+              if (context !== requestedContext || closing) {
+                return;
+              }
+              if (requestedContext.state === 'running') {
+                if (recoveryNeeded) {
+                  recoveryNeeded = false;
+                  ++resumeRecoveries;
+                  detail(`${operation}_recovered_from=${previousState}`);
+                }
+              } else {
+                detail(`${operation}_deferred_state=${requestedContext.state}`,
+                  true);
+              }
+            },
+            (reason) => {
+              if (context === requestedContext && !closing) {
+                detail(`${operation}_deferred=${reason instanceof Error
+                  ? reason.message : String(reason)}`, true);
+              }
+            });
+          if (ownsResumeSlot) {
+            resumePromise = observed;
+          }
+          observed.finally(() => {
+            if (resumePromise === observed) {
+              resumePromise = null;
+            }
+          });
+        } else if (requestedContext.state === 'running' && recoveryNeeded) {
+          recoveryNeeded = false;
+          ++resumeRecoveries;
+          detail(`${operation}_recovered_from=${previousState}`);
+        }
+        return true;
+      } catch (reason) {
+        detail(`${operation}_deferred=${reason instanceof Error
+          ? reason.message : String(reason)}`, true);
+        return false;
+      }
+    }
+
+    function recoverContextIfNeeded(operation) {
+      if (context === null || failed || closing || !started
+          || context.state === 'running') {
+        return;
+      }
+      if (context.state === 'closed') {
+        fail('context state', 'closed unexpectedly');
+        return;
+      }
+      requestContextResume(operation);
+    }
+
+    function lowWaterFrames() {
+      const halfTarget = Math.floor(targetFrames / (BLOCK_FRAMES * 2))
+        * BLOCK_FRAMES;
+      return Math.max(MINIMUM_LOW_WATER_FRAMES, halfTarget);
+    }
+
+    function applyUnderrunCount(newUnderruns) {
+      if (!Number.isSafeInteger(newUnderruns) || newUnderruns <= underruns) {
+        return;
+      }
+      const additional = newUnderruns - underruns;
+      underruns = newUnderruns;
+      targetRecoveryAt = context.currentTime + TARGET_RECOVERY_SECONDS;
+      const raisedTarget = Math.min(MAXIMUM_TARGET_FRAMES,
+        targetFrames + additional * TARGET_RAISE_FRAMES);
+      if (raisedTarget !== targetFrames) {
+        targetRaises += (raisedTarget - targetFrames) / TARGET_RAISE_FRAMES;
+        targetFrames = raisedTarget;
+      }
+      detail(`underrun=${underruns} target_frames=${targetFrames}`, true);
+    }
+
+    function handleWorkletStatus(message) {
+      if (context === null || closing || message === null || typeof message !== 'object'
+          || message.type !== 'status') {
+        return;
+      }
+      if (Number.isSafeInteger(message.consumedFrames)
+          && message.consumedFrames >= consumedFrames
+          && message.consumedFrames <= sentFrames) {
+        consumedFrames = message.consumedFrames;
+      }
+      if (Number.isSafeInteger(message.queuedFrames)
+          && message.queuedFrames >= 0) {
+        reportedWorkletFrames = message.queuedFrames;
+      }
+      applyUnderrunCount(message.underruns);
+      if (context !== null
+          && Number.isSafeInteger(message.largestUnderrunOutputFrames)
+          && message.largestUnderrunOutputFrames >= 0) {
+        largestGapMilliseconds = Math.max(largestGapMilliseconds,
+          message.largestUnderrunOutputFrames * 1000 / context.sampleRate);
+      }
+    }
+
+    function scheduleBlock(block) {
+      try {
+        const now = context.currentTime;
+        if (nextStartTime < now) {
+          largestGapMilliseconds = Math.max(largestGapMilliseconds,
+            (now - nextStartTime) * 1000);
+          applyUnderrunCount(underruns + 1);
+          nextStartTime = now + BLOCK_FRAMES / SOURCE_RATE;
+          segmentStartTime = nextStartTime;
+        }
+        const buffer = context.createBuffer(CHANNELS, BLOCK_FRAMES, SOURCE_RATE);
+        for (let channel = 0; channel < CHANNELS; ++channel) {
+          const output = buffer.getChannelData(channel);
+          for (let frame = 0; frame < BLOCK_FRAMES; ++frame) {
+            output[frame] = block[frame * CHANNELS + channel] / 32768;
+          }
+        }
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(context.destination);
+        source.onended = () => { sources.delete(source); source.disconnect(); };
+        sources.add(source);
+        source.start(nextStartTime);
+        nextStartTime += buffer.duration;
+        sentFrames += BLOCK_FRAMES;
+        ++scheduledBuffers;
+        scheduledFrames += BLOCK_FRAMES;
+        return true;
+      } catch (reason) {
+        return fail('schedule block', reason);
+      }
+    }
+
+    function postBlock(block) {
+      if (scheduledFallback) {
+        return scheduleBlock(block);
+      }
+      if (workletNode === null || failed || !(block instanceof Int16Array)
+          || block.length !== BLOCK_FRAMES * CHANNELS) {
+        return false;
+      }
+      try {
+        workletNode.port.postMessage(
+          { type: 'enqueue', samples: block }, [block.buffer]);
+        sentFrames += BLOCK_FRAMES;
+        ++scheduledBuffers;
+        scheduledFrames += BLOCK_FRAMES;
+        return true;
+      } catch (reason) {
+        return fail('enqueue worklet block', reason);
+      }
+    }
+
+    function flushPrepared() {
+      if (!scheduledFallback && (!workletReady || workletNode === null)) {
+        return true;
+      }
+      const pending = prepared;
+      prepared = [];
+      preparedFrames = 0;
+      for (const block of pending) {
+        if (!postBlock(block)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    async function prepareWorklet(createdContext) {
+      let moduleUrl = null;
+      try {
+        if (createdContext.audioWorklet === undefined
+            || typeof createdContext.audioWorklet.addModule !== 'function'
+            || typeof host.AudioWorkletNode !== 'function'
+            || typeof host.Blob !== 'function'
+            || host.URL === undefined
+            || typeof host.URL.createObjectURL !== 'function') {
+          fail('initialize', 'AudioWorklet is unavailable');
+          return;
+        }
+        const moduleBlob = new host.Blob(
+          [AUDIO_WORKLET_SOURCE], { type: 'text/javascript' });
+        moduleUrl = host.URL.createObjectURL(moduleBlob);
+        await createdContext.audioWorklet.addModule(moduleUrl);
+        if (closing || failed || context !== createdContext) {
+          return;
+        }
+        const node = new host.AudioWorkletNode(createdContext, PROCESSOR_NAME, {
+          numberOfInputs: 0,
+          numberOfOutputs: 1,
+          outputChannelCount: [CHANNELS],
+          channelCount: CHANNELS,
+          channelCountMode: 'explicit',
+          channelInterpretation: 'speakers',
+        });
+        node.port.onmessage = (event) => handleWorkletStatus(event.data);
+        node.onprocessorerror = () => fail(
+          'audio worklet processor', 'processor error');
+        node.connect(createdContext.destination);
+        workletNode = node;
+        workletReady = true;
+        if (started) {
+          if (!flushPrepared()) {
+            return;
+          }
+          node.port.postMessage({ type: 'start' });
+        }
+        detail(`worklet_ready=1 device_rate=${createdContext.sampleRate}`);
+      } catch (reason) {
+        fail('initialize audio worklet', reason);
+      } finally {
+        if (moduleUrl !== null && host.URL !== undefined
+            && typeof host.URL.revokeObjectURL === 'function') {
+          host.URL.revokeObjectURL(moduleUrl);
+        }
+      }
+    }
+
+    function initialize() {
+      if (context !== null) {
+        return !failed;
+      }
+      const Context = host.AudioContext || host.webkitAudioContext;
+      if (typeof Context !== 'function') {
+        return fail('initialize', 'Web Audio AudioContext is unavailable');
+      }
+      try {
+        const createdContext = new Context({ latencyHint: 'interactive' });
+        context = createdContext;
+        createdContext.onstatechange = () => {
+          ++contextStateChanges;
+          if (createdContext.state === 'closed' && !closing) {
+            fail('context state', 'closed unexpectedly');
+            return;
+          }
+          detail(`context_state=${createdContext.state}`, false);
+          if (context === createdContext) {
+            recoverContextIfNeeded('state-change resume');
+          }
+        };
+        scheduledFallback = host.isSecureContext === false
+          || createdContext.audioWorklet === undefined
+          || typeof host.AudioWorkletNode !== 'function';
+        if (scheduledFallback) {
+          if (typeof createdContext.createBuffer !== 'function'
+              || typeof createdContext.createBufferSource !== 'function') {
+            return fail('initialize', 'scheduled Web Audio is unavailable');
+          }
+        } else {
+          observePromise('worklet setup', prepareWorklet(createdContext));
+        }
+        detail(`backend=${BACKEND_IDENTITY} source_rate=${SOURCE_RATE}`
+          + ` delivery=${scheduledFallback ? 'scheduled' : 'worklet'}`
+          + ` device_rate=${createdContext.sampleRate}`
+          + ` block_frames=${BLOCK_FRAMES}`
+          + ` target_frames=${targetFrames}`
+          + ` low_water_frames=${lowWaterFrames()}`);
+        return true;
+      } catch (reason) {
+        return fail('initialize', reason);
+      }
+    }
+
+    function prepareFullBlock() {
+      if (context === null || stagingFrames !== BLOCK_FRAMES) {
+        return fail('prepare block', 'invalid staging state');
+      }
+      const block = staging;
+      staging = new Int16Array(BLOCK_FRAMES * CHANNELS);
+      stagingFrames = 0;
+      if (started && (scheduledFallback || workletReady)) {
+        return postBlock(block);
+      }
+      prepared.push(block);
+      preparedFrames += BLOCK_FRAMES;
+      return true;
+    }
+
+    function enqueue(samples) {
+      if (context === null || failed || !(samples instanceof Int16Array)
+          || samples.length === 0 || samples.length % CHANNELS !== 0) {
+        return false;
+      }
+      recoverContextIfNeeded('enqueue resume');
+      let sourceFrame = 0;
+      const sourceFrames = samples.length / CHANNELS;
+      while (sourceFrame < sourceFrames) {
+        const copiedFrames = Math.min(
+          BLOCK_FRAMES - stagingFrames, sourceFrames - sourceFrame);
+        const sourceBegin = sourceFrame * CHANNELS;
+        const sourceEnd = (sourceFrame + copiedFrames) * CHANNELS;
+        staging.set(samples.subarray(sourceBegin, sourceEnd),
+          stagingFrames * CHANNELS);
+        stagingFrames += copiedFrames;
+        sourceFrame += copiedFrames;
+        if (stagingFrames === BLOCK_FRAMES && !prepareFullBlock()) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function queuedFrames() {
+      if (context === null || failed) {
+        return -1;
+      }
+      recoverContextIfNeeded('queue-poll resume');
+      if (failed) {
+        return -1;
+      }
+      let sentButUnconsumed = Math.max(0, sentFrames - consumedFrames);
+      if (scheduledFallback && started) {
+        sentButUnconsumed = Math.max(0, Math.round((nextStartTime
+          - Math.max(context.currentTime, segmentStartTime)) * SOURCE_RATE));
+        consumedFrames = sentFrames - sentButUnconsumed;
+      }
+      const frames = preparedFrames + sentButUnconsumed;
+      if (started) {
+        minimumHeadroomFrames = Math.min(minimumHeadroomFrames, frames);
+      }
+      return frames;
+    }
+
+    function queuedBytes() {
+      const frames = queuedFrames();
+      return frames < 0 ? -1 : frames * CHANNELS * 2;
+    }
+
+    function targetBytes() {
+      // A transient stall must not permanently increase interactive latency.
+      // Use device time (suspension cannot count as stable playback). Existing
+      // PCM drains normally; the producer's backpressure handles the lower
+      // target without discarding samples or changing their playback rate.
+      if (context !== null && !failed && started
+          && context.state === 'running' && targetFrames > MINIMUM_TARGET_FRAMES
+          && context.currentTime >= targetRecoveryAt) {
+        targetFrames = Math.max(MINIMUM_TARGET_FRAMES,
+          targetFrames - TARGET_RAISE_FRAMES);
+        ++targetReductions;
+        targetRecoveryAt = context.currentTime + TARGET_RECOVERY_SECONDS;
+        detail(`stable_playback=1 target_frames=${targetFrames}`);
+      }
+      return context === null || failed ? -1 : targetFrames * CHANNELS * 2;
+    }
+
+    function lowWaterBytes() {
+      return context === null || failed ? -1 : lowWaterFrames() * CHANNELS * 2;
+    }
+
+    function start() {
+      if (context === null || failed) {
+        return false;
+      }
+      if (started) {
+        return true;
+      }
+      if (queuedFrames() < targetFrames) {
+        return fail('start', `insufficient prepared frames ${queuedFrames()}`);
+      }
+      started = true;
+      if (scheduledFallback) {
+        nextStartTime = context.currentTime + BLOCK_FRAMES / SOURCE_RATE;
+        segmentStartTime = nextStartTime;
+        if (!flushPrepared()) {
+          return false;
+        }
+      } else if (workletReady) {
+        if (!flushPrepared() || workletNode === null) {
+          return false;
+        }
+        workletNode.port.postMessage({ type: 'start' });
+      }
+      return requestContextResume('start resume');
+    }
+
+    function resume(permitGestureRetry = true) {
+      // A browser gesture must be allowed to issue a fresh resume request even
+      // when a policy-blocked automatic request is still pending.
+      return requestContextResume(permitGestureRetry ? 'gesture resume' : 'startup resume', permitGestureRetry);
+    }
+
+    function snapshot() {
+      return {
+        identity: BACKEND_IDENTITY,
+        delivery: scheduledFallback ? 'scheduled' : 'worklet',
+        failed,
+        failureDetail,
+        started,
+        workletReady,
+        contextState: context === null ? 'closed' : context.state,
+        contextSeconds: context === null ? 0 : context.currentTime,
+        deviceRate: context === null ? 0 : context.sampleRate,
+        scheduledAheadMilliseconds: context === null || !scheduledFallback
+          ? 0 : Math.max(0, nextStartTime - context.currentTime) * 1000,
+        activeSources: sources.size,
+        stagingFrames,
+        preparedFrames,
+        queuedFrames: queuedFrames(),
+        reportedWorkletFrames,
+        sentFrames,
+        consumedFrames,
+        blockFrames: BLOCK_FRAMES,
+        targetFrames,
+        lowWaterFrames: lowWaterFrames(),
+        scheduledBuffers,
+        scheduledFrames,
+        underruns,
+        targetRaises,
+        targetReductions,
+        contextStateChanges,
+        resumeAttempts,
+        resumeRecoveries,
+        largestGapMilliseconds,
+        minimumHeadroomFrames: Number.isFinite(minimumHeadroomFrames)
+          ? minimumHeadroomFrames : 0,
+        baseLatencySeconds: context !== null
+          && Number.isFinite(context.baseLatency) ? context.baseLatency : 0,
+        outputLatencySeconds: context !== null
+          && Number.isFinite(context.outputLatency) ? context.outputLatency : 0,
+        detailLines,
+      };
+    }
+
+    function shutdown() {
+      const state = snapshot();
+      logger.log.call(logger, `${BACKEND_IDENTITY} summary scheduled_buffers=${state.scheduledBuffers}`
+        + ` scheduled_frames=${state.scheduledFrames}`
+        + ` consumed_frames=${state.consumedFrames}`
+        + ` underruns=${state.underruns}`
+        + ` target_frames=${state.targetFrames}`
+        + ` target_raises=${state.targetRaises}`
+        + ` target_reductions=${state.targetReductions}`
+        + ` context_state_changes=${state.contextStateChanges}`
+        + ` resume_attempts=${state.resumeAttempts}`
+        + ` resume_recoveries=${state.resumeRecoveries}`
+        + ` largest_gap_ms=${state.largestGapMilliseconds.toFixed(3)}`
+        + ` minimum_headroom_frames=${state.minimumHeadroomFrames}`
+        + ` base_latency_ms=${(state.baseLatencySeconds * 1000).toFixed(3)}`
+        + ` output_latency_ms=${(state.outputLatencySeconds * 1000).toFixed(3)}`
+        + ` failed=${state.failed ? 1 : 0}`);
+      closing = true;
+      for (const source of sources) {
+        try { source.stop(); source.disconnect(); } catch (_) { /* Already ended. */ }
+      }
+      sources.clear();
+      if (workletNode !== null) {
+        try {
+          workletNode.port.postMessage({ type: 'reset' });
+          workletNode.disconnect();
+        } catch (_) {
+          // A stopped processor has no remaining presentation effect.
+        }
+      }
+      workletNode = null;
+      workletReady = false;
+      resumePromise = null;
+      recoveryNeeded = false;
+      prepared = [];
+      preparedFrames = 0;
+      stagingFrames = 0;
+      if (context !== null) {
+        try {
+          observePromise('close', context.close());
+        } catch (reason) {
+          fail('close', reason);
+        }
+      }
+      context = null;
+    }
+
+    return {
+      identity: BACKEND_IDENTITY,
+      initialize,
+      enqueue,
+      queuedBytes,
+      targetBytes,
+      lowWaterBytes,
+      start,
+      resume,
+      snapshot,
+      shutdown,
+    };
+  }
+
+  if (typeof module === 'object' && module.exports) {
+    module.exports = {
+      audioWorkletSource: AUDIO_WORKLET_SOURCE,
+      createScheduledAudioBackend,
+    };
+  }
+  if (typeof Module !== 'undefined') {
+    Module['webAudio'] = createScheduledAudioBackend(root);
+  }
+}(typeof globalThis === 'object' ? globalThis : this));
+</script>
+</body>
+</html>
