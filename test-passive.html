@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="p2w-source" content="8a482b4a128eaf33f5ed94295c5d067ba56074bb">
+  <title>P2W touch diagnostics</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100vh;
+      background: #000;
+    }
+    @supports (height: 100dvh) {
+      html, body {
+        height: 100dvh;
+      }
+    }
+    body {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    #language-picker {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-columns: max-content;
+      align-content: center;
+      justify-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--label-color);
+    }
+    #language-picker[hidden] { display: none; }
+    #language-picker h1 {
+      grid-column: 1 / -1;
+      margin: 0 0 4px;
+      font: 16px/1.4 system-ui, sans-serif;
+    }
+    @media (min-width: 600px) {
+      #language-picker { grid-template-columns: repeat(3, max-content); }
+    }
+    #language-picker button {
+      box-sizing: border-box;
+      width: min(176px, calc(100vw - 48px));
+      aspect-ratio: 4 / 1;
+      padding: 0;
+      border: 1px solid var(--key-border);
+      border-radius: 6px;
+      background: transparent;
+      color: inherit;
+      font: 13px/1 system-ui, sans-serif;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #language-picker button:hover,
+    #language-picker button:active { border-color: var(--key-color); }
+    #language-picker button:focus-visible { outline: 1px solid var(--key-color); outline-offset: 3px; }
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: min(420px, calc(100vw - 48px));
+      transform: translate(-50%, -50%);
+      color: #c8c8c8;
+      font: 13px/1.4 system-ui, sans-serif;
+      text-align: center;
+    }
+    #progress {
+      height: 4px;
+      border: 1px solid #707070;
+    }
+    #progress-value {
+      width: 0;
+      height: 100%;
+      background: #d8d8d8;
+    }
+    #status {
+      margin-top: 10px;
+    }
+    #stage {
+      position: relative;
+      width: min(100vw, 133.333333vh);
+      aspect-ratio: 4 / 3;
+    }
+    @supports (height: 100dvh) {
+      #stage {
+        width: min(100vw, 133.333333dvh);
+      }
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+      image-rendering: pixelated;
+    }
+    #start {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: #c8c8c8;
+      font: 13px/1.4 system-ui, sans-serif;
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+    }
+    #start[hidden] {
+      display: none;
+    }
+    #diagnostics {
+      position: fixed;
+      z-index: 19;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-height: 46vh;
+      margin: 0;
+      padding: 8px 10px;
+      overflow: auto;
+      pointer-events: none;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: #d7ffd7;
+      background: rgba(0, 0, 0, 0.86);
+      font: 11px/1.35 ui-monospace, Consolas, monospace;
+    }
+    [hidden] {
+      display: none;
+    }
+    #controls { display: none; }
+    #keyboard-guide { display: none; color: var(--label-color); }
+    #storage-status {
+      position: fixed;
+      bottom: max(4px, env(safe-area-inset-bottom));
+      left: 12px;
+      right: 12px;
+      z-index: 18;
+      color: #c8c8c8;
+      font: 11px/1.4 system-ui, sans-serif;
+      text-align: center;
+      pointer-events: none;
+    }
+    :root { --viewport-height: 100vh; --key-border: #454545; --key-color: #909090; --label-color: #c8c8c8; }
+    @supports (height: 100dvh) {
+      :root { --viewport-height: 100dvh; }
+    }
+    @media (pointer: fine), (hover: hover) {
+      #language-picker { bottom: 50%; }
+      #language-picker:not([hidden]) ~ #keyboard-guide {
+        display: block;
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        width: min(736px, calc(100vw - 32px), calc(var(--viewport-height) * .9));
+        height: auto;
+        user-select: none;
+        pointer-events: none;
+      }
+    }
+    @media (pointer: coarse) and (hover: none) {
+      html, body { touch-action: none; overscroll-behavior: none; }
+      body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+      #controls:not([hidden]) { display: contents; }
+      .key-grid {
+        --key-size: clamp(44px, min(9vw, 17vh), 64px);
+        --control-top: max(12px, env(safe-area-inset-top));
+        --control-bottom: max(12px, env(safe-area-inset-bottom));
+        --grid-height: calc(3 * var(--key-size) + 12px);
+        position: fixed;
+        z-index: 10;
+        display: grid;
+        grid-template-columns: repeat(3, var(--key-size));
+        grid-template-rows: repeat(3, var(--key-size));
+        gap: 6px;
+        bottom: max(var(--control-bottom), calc((var(--viewport-height) - var(--control-top) + var(--control-bottom) - var(--grid-height)) / 2));
+        pointer-events: none;
+      }
+      #left-keys { left: max(6px, env(safe-area-inset-left)); }
+      #right-keys { right: max(6px, env(safe-area-inset-right)); pointer-events: auto; touch-action: none; }
+      .key-grid::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        height: calc(var(--key-size) + 6px);
+        pointer-events: auto;
+        touch-action: none;
+      }
+      .key-grid button {
+        padding: 0;
+        border: 1px solid var(--key-border);
+        border-radius: 6px;
+        background: transparent;
+        color: var(--key-color);
+        font: 11px/1 system-ui, sans-serif;
+        display: grid;
+        place-items: center;
+        touch-action: none;
+        pointer-events: auto;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .key-grid button.arrow { font-size: 18px; }
+      #left-keys button.arrow {
+        position: absolute;
+        bottom: 0;
+        box-sizing: border-box;
+        width: calc(1.5 * var(--key-size) + 3px);
+        height: calc(1.5 * var(--key-size) + 3px);
+        font-size: 27px;
+      }
+      #left-keys [data-key="90"] { left: 0; }
+      #left-keys [data-key="88"] { right: 0; }
+      .key-grid button.pressed { border-color: var(--key-color); color: #b0b0b0; }
+      .key-grid button:focus-visible { outline: 1px solid var(--key-color); }
+    }
+    @media (pointer: coarse) and (hover: none) and (orientation: portrait) {
+      body { align-items: start; }
+      #stage { margin-top: env(safe-area-inset-top); width: min(100vw, 133.333333dvh); }
+      .key-grid {
+        /* Keep key sizes: 6px at each edge, 24px grid gaps, 18px between pads. */
+        --key-size: clamp(44px, calc((100vw - 54px - env(safe-area-inset-left) - env(safe-area-inset-right)) / 6), 64px);
+        /* The top-aligned 4:3 game occupies 75vw below the safe-area inset. */
+        --control-top: calc(env(safe-area-inset-top) + 75vw + 12px);
+      }
+    }
+  </style>
+  <style>
+    #touch-report {
+      position: fixed;
+      inset: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+      color: #c8c8c8;
+      font: 12px/1.4 system-ui, sans-serif;
+    }
+    #touch-report header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    #touch-report h1 { margin: 0; font: 600 14px/1.4 system-ui, sans-serif; }
+    #touch-report button {
+      padding: 8px 10px;
+      border: 1px solid #707070;
+      border-radius: 6px;
+      background: #171717;
+      color: #eee;
+      font: inherit;
+      touch-action: manipulation;
+    }
+    #touch-report p { margin: 0; }
+    #key-state { color: #d7ffd7; }
+    #event-log, #copy-text {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0;
+      border: 1px solid #333;
+      padding: 8px;
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #080808;
+      color: #ccc;
+      font: 10px/1.4 ui-monospace, Consolas, monospace;
+    }
+    #event-log { pointer-events: none; }
+    #copy-text { resize: none; user-select: text; -webkit-user-select: text; -webkit-touch-callout: default; }
+  </style>
+</head>
+<body>
+  <main id="touch-report">
+    <header>
+      <h1>Touch diagnostics</h1>
+      <button type="button" id="copy-log">Copy log</button>
+      <button type="button" id="clear-log">Clear log</button>
+    </header>
+    <p id="test-mode"></p>
+    <p id="copy-status" role="status">After a missed press, tap Copy log. Latest 2,000 lines are kept locally.</p>
+    <p id="key-state">Active keys: none</p>
+    <pre id="event-log" aria-label="Recent input events"></pre>
+    <textarea id="copy-text" aria-label="Log to copy manually" readonly hidden></textarea>
+  </main>
+  <nav id="controls" aria-label="Player 1 touch keyboard" hidden>
+    <div class="key-grid" id="left-keys">
+      <button type="button" data-key="27" aria-label="Escape" style="grid-area:1/1">ESC</button>
+      <button type="button" data-key="13" aria-label="Enter" style="grid-area:1/2/2/4">ENTER</button>
+      <button type="button" class="arrow" data-key="90" aria-label="Rotate counterclockwise (Z)">↺</button>
+      <button type="button" class="arrow" data-key="88" aria-label="Rotate clockwise (X)">↻</button>
+    </div>
+    <div class="key-grid" id="right-keys">
+      <button type="button" class="arrow" data-key="84" aria-label="Up (T)" style="grid-area:1/2">↑</button>
+      <button type="button" class="arrow" data-key="70" aria-label="Left (F)" style="grid-area:2/1">←</button>
+      <button type="button" class="arrow" data-key="72" aria-label="Right (H)" style="grid-area:2/3">→</button>
+      <button type="button" class="arrow" data-key="86" aria-label="Down (V)" style="grid-area:3/2">↓</button>
+    </div>
+  </nav>
+  <script>
+    const source = document.querySelector('meta[name="p2w-source"]').content;
+    const cancelDefaults = false;
+    const testMode = cancelDefaults ? 'baseline' : 'no-js-cancellation';
+    document.getElementById('test-mode').textContent = cancelDefaults ?
+      'JS cancellation: ON (game behavior)' : 'JS cancellation: OFF · CSS unchanged';
+    const report = document.getElementById('touch-report');
+    const output = document.getElementById('event-log');
+    const copyText = document.getElementById('copy-text');
+    const copyStatus = document.getElementById('copy-status');
+    const state = document.getElementById('key-state');
+    const controls = document.getElementById('controls');
+    controls.hidden = false;
+    const keyNames = new Map([[27,'Esc'],[13,'Enter'],[90,'Z/CCW'],[88,'X/CW'],[84,'Up'],[70,'Left'],[72,'Right'],[86,'Down']]);
+    const activeKeys = new Set();
+    const capacity = 2000, lines = new Array(capacity), began = performance.now();
+    let total = 0, clearedAt = 0, renderTimer = null, eventId = 0;
+    const events = new WeakMap();
+    const label = node => node?.dataset?.key ? `key:${keyNames.get(Number(node.dataset.key))}` :
+      node?.id ? `#${node.id}` : node?.nodeName?.toLowerCase() || String(node);
+    const rounded = value => Number.isFinite(value) ? Math.round(value * 100) / 100 : null;
+    const pressed = () => [...controls.querySelectorAll('button.pressed')].map(button => keyNames.get(Number(button.dataset.key)));
+    const retained = (limit = capacity) => {
+      const first = Math.max(clearedAt, total - capacity, total - limit);
+      return Array.from({length: total - first}, (_, i) => lines[(first + i) % capacity]);
+    };
+    function log(type, detail = {}) {
+      const line = `${++total} +${(performance.now() - began).toFixed(1)}ms ${type} ${JSON.stringify(detail)}`;
+      lines[(total - 1) % capacity] = line;
+      if (renderTimer === null) renderTimer = setTimeout(() => {
+        renderTimer = null;
+        output.textContent = retained(40).join('\n');
+        output.scrollTop = output.scrollHeight;
+      }, 100);
+    }
+    const keyState = () => {
+      state.textContent = `Active keys: ${[...activeKeys].map(key => keyNames.get(key)).join(', ') || 'none'}`;
+    };
+    // These are the keypad's engine boundary only. The shared handler below is unchanged.
+    const start = {hidden: true};
+    const Module = {
+      _web_status: () => 2,
+      _web_virtual_key(key, down) {
+        if (down === 1) activeKeys.add(key); else activeKeys.delete(key);
+        log(down === 1 ? 'KEY_DOWN' : down === -1 ? 'KEY_CANCEL' : 'KEY_UP', {key: keyNames.get(key), code: key, highlighted: pressed()});
+        keyState();
+        return 1;
+      },
+      _web_cancel_virtual_keys() { activeKeys.clear(); keyState(); log('CANCEL_ALL'); }
+    };
+    const activateGame = () => log('ACTIVATE');
+    const coordinates = contact => ({
+      x: rounded(contact.clientX), y: rounded(contact.clientY),
+      target: label(contact.target), hit: label(document.elementFromPoint(contact.clientX, contact.clientY))
+    });
+    const touchInfo = touch => ({id: touch.identifier, ...coordinates(touch),
+      radius: [rounded(touch.radiusX), rounded(touch.radiusY)], force: rounded(touch.force)});
+    for (const type of ['pointerdown','pointermove','pointerup','pointercancel','pointerover','pointerout',
+      'gotpointercapture','lostpointercapture','touchstart','touchmove','touchend','touchcancel',
+      'mousedown','mouseup','click','dblclick','contextmenu','gesturestart','gesturechange','gestureend']) {
+      window.addEventListener(type, event => {
+        const id = ++eventId;
+        events.set(event, id);
+        const detail = {event: id, target: label(event.target), trusted: event.isTrusted,
+          cancelable: event.cancelable, prevented: event.defaultPrevented, stamp: rounded(event.timeStamp)};
+        if (event.touches) {
+          detail.touches = [...event.touches].map(touchInfo);
+          detail.changed = [...event.changedTouches].map(touchInfo);
+        } else if ('clientX' in event) Object.assign(detail, coordinates(event));
+        if ('pointerId' in event) Object.assign(detail, {pointer: event.pointerId, kind: event.pointerType,
+          primary: event.isPrimary, buttons: event.buttons, pressure: rounded(event.pressure),
+          size: [rounded(event.width), rounded(event.height)]});
+        if ('scale' in event) Object.assign(detail, {scale: rounded(event.scale), rotation: rounded(event.rotation)});
+        log(`RAW ${type}`, detail);
+      }, {capture: true, passive: true});
+      window.addEventListener(type, event => {
+        log(`END ${type}`, {event: events.get(event), prevented: event.defaultPrevented,
+          active: [...activeKeys].map(key => keyNames.get(key)), highlighted: pressed()});
+      }, {passive: true});
+    }
+    const environment = () => ({source, testMode, page: location.pathname, time: new Date().toISOString(), userAgent: navigator.userAgent,
+      platform: navigator.platform, language: navigator.language, touchPoints: navigator.maxTouchPoints,
+      touchEvents: 'ontouchstart' in window, secure: isSecureContext, focused: document.hasFocus(), hidden: document.hidden,
+      coarse: matchMedia('(pointer: coarse) and (hover: none)').matches,
+      portrait: matchMedia('(orientation: portrait)').matches, viewport: [innerWidth, innerHeight],
+      screen: [screen.width, screen.height], dpr: devicePixelRatio,
+      visualViewport: window.visualViewport ? {width: visualViewport.width, height: visualViewport.height,
+        scale: visualViewport.scale, x: visualViewport.offsetLeft, y: visualViewport.offsetTop} : null});
+    const geometry = () => [...controls.querySelectorAll('.key-grid, button')].map(element => {
+      const rect = element.getBoundingClientRect();
+      return {element: label(element), rect: [rect.x, rect.y, rect.width, rect.height].map(rounded),
+        touchAction: getComputedStyle(element).touchAction};
+    });
+    function layout() {
+      report.style.left = report.style.right = report.style.height = report.style.bottom = '';
+      if (matchMedia('(pointer: coarse) and (hover: none)').matches) {
+        const left = document.getElementById('left-keys').getBoundingClientRect();
+        const right = document.getElementById('right-keys').getBoundingClientRect();
+        if (matchMedia('(orientation: portrait)').matches) {
+          report.style.bottom = 'auto';
+          report.style.height = `${Math.max(0, Math.min(left.top, right.top) - report.getBoundingClientRect().top - 12)}px`;
+        } else {
+          report.style.left = `${left.right + 12}px`;
+          report.style.right = `${innerWidth - right.left + 12}px`;
+        }
+      }
+      log('LAYOUT', {environment: environment(), keypad: geometry()});
+    }
+    for (const type of ['blur','focus','pagehide','pageshow','orientationchange']) {
+      window.addEventListener(type, event => log(type, {persisted: event.persisted, environment: environment()}));
+    }
+    document.addEventListener('visibilitychange', () => log('visibilitychange', environment()));
+    window.addEventListener('resize', layout);
+    window.visualViewport?.addEventListener('resize', layout);
+    window.visualViewport?.addEventListener('scroll', () => log('viewport-scroll', environment()));
+    for (const query of ['(pointer: coarse) and (hover: none)', '(orientation: portrait)']) {
+      matchMedia(query).addEventListener('change', layout);
+    }
+    const transcript = () => [
+      'P2W touch diagnostics', JSON.stringify(environment()), JSON.stringify({keypad: geometry()}),
+      `Retained ${retained().length} lines; ${Math.max(0, total - capacity - clearedAt)} older lines dropped; active: ${[...activeKeys].map(key => keyNames.get(key)).join(', ') || 'none'}`,
+      ...retained()
+    ].join('\n');
+    async function copyLog() {
+      const text = transcript();
+      try {
+        await navigator.clipboard.writeText(text);
+        copyStatus.textContent = 'Copied. Paste the log into the conversation.';
+        copyText.hidden = true;
+        output.hidden = false;
+      } catch {
+        copyText.value = text;
+        copyText.hidden = false;
+        output.hidden = true;
+        copyText.focus({preventScroll: true});
+        copyText.select();
+        copyStatus.textContent = 'Copy was blocked. Select and copy the text below.';
+      }
+    }
+    function clearLog() {
+      clearedAt = total;
+      copyText.hidden = true;
+      output.hidden = false;
+      copyStatus.textContent = 'Log cleared. Reproduce the missed press, then tap Copy log.';
+      log('CLEARED', environment());
+    }
+    for (const [id, action] of [['copy-log', copyLog], ['clear-log', clearLog]]) {
+      const button = document.getElementById(id);
+      button.addEventListener('click', action);
+      // The keypad suppresses synthetic clicks while another finger holds a key.
+      // Keep these diagnostic actions usable during that hold, too.
+      if (cancelDefaults) button.addEventListener('touchend', event => {
+        void 0;
+        if ([...event.changedTouches].some(touch => button.contains(document.elementFromPoint(touch.clientX, touch.clientY)))) action();
+      }, {passive: false});
+    }
+    log('START', environment());
+    layout();
+  </script>
+  <script>
+    (() => {
+      const controls = document.getElementById('controls');
+      const mobile = matchMedia('(pointer: coarse) and (hover: none)');
+      const orientation = matchMedia('(orientation: portrait)');
+      const pointers = new Map();
+      const activationPointers = new Set();
+      const useTouchEvents = 'ontouchstart' in window;
+      let touches = new Map();
+      const ignoredTouches = new Set();
+      const buttons = [...controls.querySelectorAll('button[data-key]')];
+      const dpad = document.getElementById('right-keys');
+      const actions = document.getElementById('left-keys');
+      const direction = key => buttons.find(button => Number(button.dataset.key) === key);
+      const counts = new Map();
+      const ready = () => start.hidden && Module._web_status?.() === 2;
+      const send = (button, delta, cancel = false) => {
+        if (!button) return;
+        const old = counts.get(button) || 0;
+        const count = Math.max(0, old + delta);
+        counts.set(button, count);
+        button.classList.toggle('pressed', count > 0);
+        if ((old === 0) !== (count === 0)) {
+          if (Module._web_status() >= 3) return; // Keep an existing exit/fault message.
+          if (!Module._web_virtual_key(Number(button.dataset.key), cancel && count === 0 ? -1 : Number(count > 0))) {
+            start.hidden = false;
+            start.textContent = 'Execution stopped: touch input failed. Reload to retry.';
+          }
+        }
+      };
+      const hit = event => {
+        const rect = dpad.getBoundingClientRect();
+        const x = event.clientX - rect.left, y = event.clientY - rect.top;
+        if (x >= 0 && y >= 0 && x < rect.width && y < rect.height + (rect.height + 6) / 3) {
+          const column = Math.floor(x * 3 / rect.width), row = Math.floor(y * 3 / rect.height);
+          if (column === 1 && row === 1) return [];
+          // Equal-spaced arrow centers divide corners along 45-degree lines.
+          // Keep measuring below the grid, where Down is the closest arrow.
+          const dx = x - rect.width / 2, dy = y - rect.height / 2;
+          const key = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 70 : 72) : (dy < 0 ? 84 : 86);
+          return [direction(key)]; // Exact diagonal ties prefer the vertical arrow.
+        }
+        const actionRect = actions.getBoundingClientRect();
+        const actionX = event.clientX - actionRect.left;
+        const below = event.clientY - actionRect.top - actionRect.height;
+        if (actionX >= 0 && actionX < actionRect.width && below >= 0 && below < (actionRect.height + 6) / 3) {
+          return [direction(actionX < actionRect.width / 2 ? 90 : 88)];
+        }
+        const button = document.elementFromPoint(event.clientX, event.clientY)?.closest('button[data-key]');
+        return buttons.includes(button) && !dpad.contains(button) ? [button] : [];
+      };
+      const update = (pointerId, next, cancel = false) => {
+        const previous = pointers.get(pointerId) || [];
+        for (const button of previous) if (!next.includes(button)) send(button, -1, cancel);
+        for (const button of next) if (!previous.includes(button)) send(button, 1);
+        pointers.set(pointerId, next);
+      };
+      const release = (event, cancel = false) => {
+        if (!pointers.has(event.pointerId)) return;
+        update(event.pointerId, [], cancel);
+        pointers.delete(event.pointerId);
+        activationPointers.delete(event.pointerId);
+      };
+      const clear = () => {
+        for (const pointerId of [...pointers.keys()]) release({pointerId}, true);
+        for (const [id, touch] of touches) {
+          ignoredTouches.add(id); // A later snapshot must not revive a cancelled hold.
+          for (const button of touch.buttons) send(button, -1, true);
+        }
+        touches.clear();
+        Module._web_cancel_virtual_keys?.();
+      };
+      const onKeypad = touch => actions.contains(touch.target) || dpad.contains(touch.target);
+      const reconcileTouches = event => {
+        const changed = [...event.changedTouches];
+        const active = new Set([...event.touches].map(touch => touch.identifier));
+        for (const id of ignoredTouches) if (!active.has(id)) ignoredTouches.delete(id);
+        // Identifiers can be reused after a release that happened while unfocused.
+        if (event.type === 'touchstart') {
+          for (const touch of changed) ignoredTouches.delete(touch.identifier);
+        }
+        if (!mobile.matches || document.hidden) {
+          for (const id of active) ignoredTouches.add(id);
+          return;
+        }
+        const next = new Map(), deltas = new Map(), cancelled = new Set();
+        const delta = (button, amount) => deltas.set(button, (deltas.get(button) || 0) + amount);
+        let activate = false;
+        for (const touch of event.touches) {
+          const previous = touches.get(touch.identifier);
+          if (ignoredTouches.has(touch.identifier) || (!previous && !onKeypad(touch))) continue;
+          const activation = previous?.activation ?? !ready();
+          // Touch targets retain their starting element, even after sliding away.
+          next.set(touch.identifier, {buttons: activation || !ready() ? [] : hit(touch), activation});
+        }
+        if (touches.size || next.size || changed.some(onKeypad) ||
+            (event.type === 'touchmove' && event.touches.length > 1)) {
+          if (event.cancelable) void 0;
+        }
+        for (const [id, previous] of touches) {
+          for (const button of previous.buttons) {
+            delta(button, -1);
+            if (!active.has(id) && event.type === 'touchcancel') cancelled.add(button);
+          }
+          if (!active.has(id) && previous.activation && event.type === 'touchend' && !ready()) {
+            const ended = changed.find(touch => touch.identifier === id);
+            if (ended && hit(ended).length) activate = true;
+          }
+        }
+        for (const touch of next.values()) for (const button of touch.buttons) delta(button, 1);
+        // Apply net changes so replacing a finger on a held key cannot release it.
+        for (const [button, amount] of deltas) if (amount < 0) send(button, amount, cancelled.has(button));
+        for (const [button, amount] of deltas) if (amount > 0) send(button, amount);
+        touches = next;
+        if (activate) activateGame(event);
+      };
+      for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
+        if (useTouchEvents) document.addEventListener(type, reconcileTouches, {capture: true, passive: false});
+      }
+      for (const button of [actions, dpad]) {
+        button.addEventListener('pointerdown', event => {
+          // Touch Events own fingers; keep Pointer Events for mouse/pen and browsers without Touch Events.
+          if (!mobile.matches || event.button !== 0 || (useTouchEvents && event.pointerType === 'touch')) return;
+          void 0;
+          button.setPointerCapture(event.pointerId);
+          if (!ready()) activationPointers.add(event.pointerId);
+          update(event.pointerId, ready() ? hit(event) : []);
+        });
+        button.addEventListener('pointermove', event => {
+          if (!pointers.has(event.pointerId) || activationPointers.has(event.pointerId) || !ready()) return;
+          update(event.pointerId, hit(event));
+        });
+        button.addEventListener('pointerup', event => {
+          const tracked = pointers.has(event.pointerId);
+          release(event);
+          if (tracked && !ready() && hit(event).length) activateGame(event);
+        });
+        button.addEventListener('pointercancel', event => release(event, true));
+        button.addEventListener('lostpointercapture', event => release(event, true));
+        button.addEventListener('click', event => void 0);
+      }
+      window.addEventListener('blur', clear);
+      window.addEventListener('pagehide', clear);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) clear(); });
+      mobile.addEventListener('change', clear);
+      orientation.addEventListener('change', clear);
+      // Safari gesture events supplement touch-action for page-level pinch zoom.
+      const stopMobileGesture = event => { if (mobile.matches) void 0; };
+      for (const type of ['gesturestart', 'gesturechange', 'gestureend', 'dblclick', 'contextmenu']) {
+        document.addEventListener(type, stopMobileGesture, {passive: false});
+      }
+    })();
+  </script>
+</body>
+</html>
